@@ -4,7 +4,9 @@
 #include <glog/logging.h>
 #include <openssl/evp.h>
 #include <openssl/opensslv.h>
+#include <openssl/err.h>
 #include <stdint.h>
+#include <mutex>
 
 #include "log/verifier.h"
 #include "proto/ct.pb.h"
@@ -17,6 +19,8 @@
 using cert_trans::Verifier;
 
 namespace cert_trans {
+
+std::mutex lock_;
 
 Signer::Signer(EVP_PKEY* pkey) : pkey_(CHECK_NOTNULL(pkey)) {
   switch (pkey_->type) {
@@ -59,7 +63,15 @@ std::string Signer::RawSign(const std::string& data) const {
   unsigned int sig_size = EVP_PKEY_size(pkey_.get());
   unsigned char* sig = new unsigned char[sig_size];
 
-  CHECK_EQ(1, EVP_SignFinal(&ctx, sig, &sig_size, pkey_.get()));
+  std::lock_guard<std::mutex> lock(lock_);
+  if (!EVP_SignFinal(&ctx, sig, &sig_size, pkey_.get())) {
+    static char buf[1024];
+    ERR_error_string(ERR_get_error(), buf);
+    LOG(ERROR) << "Failed to sign data. " << std::string(buf);
+    EVP_MD_CTX_cleanup(&ctx);
+    delete[] sig;
+    return std::string(""); 
+  }
 
   EVP_MD_CTX_cleanup(&ctx);
   std::string ret(reinterpret_cast<char*>(sig), sig_size);
