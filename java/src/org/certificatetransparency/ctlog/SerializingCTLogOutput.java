@@ -29,7 +29,7 @@ public class SerializingCTLogOutput implements CTLogOutput {
   }
 
   @Override
-  public boolean addAll(Collection<CertificateData> entries) {
+  public boolean addAll(Collection<CertificateData> entries, long startEntryId, long endEntryId) {
     return data.addAll(entries);
   }
 

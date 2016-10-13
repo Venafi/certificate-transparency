@@ -77,7 +77,7 @@ public class IndividualFileCTLogOutput implements CTLogOutput {
   }
 
   @Override
-  public boolean addAll(Collection<CertificateData> entries) {
+  public boolean addAll(Collection<CertificateData> entries, long startEntryId, long endEntryId) {
     return saveBatch(entries);
   }
 
