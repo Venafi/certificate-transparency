@@ -26,6 +26,7 @@ import org.certificatetransparency.ctlog.CTLogOutput;
 import org.certificatetransparency.ctlog.CertificateData;
 import org.certificatetransparency.ctlog.CertificateInfo;
 import org.certificatetransparency.ctlog.CertificateTransparencyException;
+import org.certificatetransparency.ctlog.LogEntry;
 import org.certificatetransparency.ctlog.ParsedLogEntry;
 import org.certificatetransparency.ctlog.ParsedLogEntryWithProof;
 import org.certificatetransparency.ctlog.SignedTreeHead;
@@ -256,7 +257,7 @@ public class HttpLogClient {
         @Override public void run() {
           LOG.info(String.format("Retrieving from %d to %d.", currentStart, currentEnd));
           List<ParsedLogEntry> entries = parseLogEntries(invoker.executeGetRequestWithRetry(logUrl + GET_ENTRIES, createParamsList("start", "end", Long.toString(currentStart), Long.toString(currentEnd))));
-          output.addAll(Lists.transform(entries, entryToCertificateData));
+          output.addAll(Lists.transform(entries, entryToCertificateData), currentStart, currentEnd);
         }
       }, 1L));
     }

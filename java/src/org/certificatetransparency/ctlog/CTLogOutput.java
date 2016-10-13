@@ -16,7 +16,7 @@ public interface CTLogOutput {
   /**
    * Add a collection of entries to the output.
    */
-  boolean addAll(Collection<CertificateData> entries);
+  boolean addAll(Collection<CertificateData> entries, long startEntryId, long endEntryId);
 
   /**
    * @return the number of entries saved.
