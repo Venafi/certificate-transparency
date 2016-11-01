@@ -47,6 +47,7 @@ DEFINE_double(guard_window_seconds, 60,
 DEFINE_int32(num_http_server_threads, 16,
              "Number of threads for servicing the incoming HTTP requests.");
 DEFINE_string(engine, "", "OpenSSL engine to initialize and use");
+DEFINE_bool(synchronize_signing, false, "true if signing should be synchronized");
 
 namespace libevent = cert_trans::libevent;
 
@@ -132,7 +133,7 @@ int main(int argc, char* argv[]) {
     pkey = ReadEnginePrivateKey(FLAGS_key, FLAGS_engine);
   }
   CHECK_EQ(pkey.status(), util::Status::OK);
-  LogSigner log_signer(pkey.ValueOrDie());
+  LogSigner log_signer(pkey.ValueOrDie(), synchronize_signing);
 
   CertChecker checker;
   CHECK(checker.LoadTrustedCertificates(FLAGS_trusted_cert_file))

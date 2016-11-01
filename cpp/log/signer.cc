@@ -6,6 +6,7 @@
 #include <openssl/opensslv.h>
 #include <openssl/err.h>
 #include <stdint.h>
+#include <mutex>
 
 #include "log/verifier.h"
 #include "proto/ct.pb.h"
@@ -19,7 +20,9 @@ using cert_trans::Verifier;
 
 namespace cert_trans {
 
-Signer::Signer(EVP_PKEY* pkey) : pkey_(CHECK_NOTNULL(pkey)) {
+std::mutex lock_;
+
+Signer::Signer(EVP_PKEY* pkey, bool synchronize_signing) : pkey_(CHECK_NOTNULL(pkey)) {
   switch (pkey_->type) {
     case EVP_PKEY_EC:
       hash_algo_ = ct::DigitallySigned::SHA256;
@@ -33,6 +36,7 @@ Signer::Signer(EVP_PKEY* pkey) : pkey_(CHECK_NOTNULL(pkey)) {
       LOG(FATAL) << "Unsupported key type " << pkey_->type;
   }
   key_id_ = Verifier::ComputeKeyID(pkey_.get());
+  synchronize_signing_ = synchronize_signing;
 }
 
 std::string Signer::KeyID() const {
@@ -60,7 +64,15 @@ std::string Signer::RawSign(const std::string& data) const {
   unsigned int sig_size = EVP_PKEY_size(pkey_.get());
   unsigned char* sig = new unsigned char[sig_size];
 
-  if (!EVP_SignFinal(&ctx, sig, &sig_size, pkey_.get())) {
+  bool success = false;
+  if (synchronizeSigning_) {
+    std::lock_guard<std::mutex> lock(lock_);
+    success = EVP_SignFinal(&ctx, sig, &sig_size, pkey_.get());
+  } else {
+    success = EVP_SignFinal(&ctx, sig, &sig_size, pkey_.get());
+  }
+
+  if (!success) {
     static char buf[1024];
     ERR_error_string(ERR_get_error(), buf);
     LOG(FATAL) << "Failed to sign data. " << std::string(buf);
