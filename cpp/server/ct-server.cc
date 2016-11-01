@@ -133,7 +133,7 @@ int main(int argc, char* argv[]) {
     pkey = ReadEnginePrivateKey(FLAGS_key, FLAGS_engine);
   }
   CHECK_EQ(pkey.status(), util::Status::OK);
-  LogSigner log_signer(pkey.ValueOrDie(), synchronize_signing);
+  LogSigner log_signer(pkey.ValueOrDie(), FLAGS_synchronize_signing);
 
   CertChecker checker;
   CHECK(checker.LoadTrustedCertificates(FLAGS_trusted_cert_file))

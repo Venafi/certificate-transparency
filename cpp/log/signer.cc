@@ -65,7 +65,7 @@ std::string Signer::RawSign(const std::string& data) const {
   unsigned char* sig = new unsigned char[sig_size];
 
   bool success = false;
-  if (synchronizeSigning_) {
+  if (synchronize_signing_) {
     std::lock_guard<std::mutex> lock(lock_);
     success = EVP_SignFinal(&ctx, sig, &sig_size, pkey_.get());
   } else {
