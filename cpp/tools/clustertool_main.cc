@@ -32,7 +32,6 @@ using cert_trans::EtcdConsistentStore;
 using cert_trans::LoggedEntry;
 using cert_trans::MasterElection;
 using cert_trans::ReadPrivateKey;
-using cert_trans::ReadEnginePrivateKey;
 using cert_trans::SQLiteDB;
 using cert_trans::SplitHosts;
 using cert_trans::StrictConsistentStore;
@@ -79,12 +78,7 @@ void Usage() {
 
 unique_ptr<LogSigner> BuildLogSigner() {
   CHECK(!FLAGS_key.empty());
-  util::StatusOr<EVP_PKEY*> pkey = NULL;
-  if (FLAGS_engine == "") {
-    pkey = ReadPrivateKey(FLAGS_key);
-  } else {
-    pkey = ReadEnginePrivateKey(FLAGS_key, FLAGS_engine);
-  }
+  const util::StatusOr<EVP_PKEY*> pkey(ReadPrivateKey(FLAGS_key, FLAGS_engine));
   CHECK_EQ(pkey.status(), util::Status::OK);
   return unique_ptr<LogSigner>(new LogSigner(pkey.ValueOrDie()));
 }
@@ -168,7 +162,7 @@ int main(int argc, char* argv[]) {
       election.get(),
       new EtcdConsistentStore(event_base.get(), &internal_pool, &etcd_client,
                               election.get(), "/root", node_id));
-  SQLiteDB db("/tmp/clustertooldb");
+  SQLiteDB db("./clustertooldb");
 
   const string command(argv[1]);
   Status status;
