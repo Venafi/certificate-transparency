@@ -177,7 +177,7 @@ public class Deserializer {
       preCert.issuerKeyHash = readFixedLength(in, 32);
 
       // set tbs certificate
-      int length = (int) readNumber(in, 2);
+      int length = (int) readNumber(in, 3);
       preCert.tbsCertificate = readFixedLength(in, length);
 
       signedEntry.preCert = preCert;
@@ -226,6 +226,9 @@ public class Deserializer {
     preCertChain.preCert = preCert;
 
     try {
+      // In case of Pre-cert first is end-entity certificate
+      preCertChain.precertificateChain.add(readFixedLength(in, (int) readNumber(in, 3)));
+
       if (readNumber(in, 3) != in.available()) {
         throw new SerializationException("Extra data corrupted.");
       }
