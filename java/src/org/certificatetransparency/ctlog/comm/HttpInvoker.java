@@ -57,9 +57,9 @@ public class HttpInvoker {
    * @return Server's response body.
    */
   public String makeGetRequest(String url, List<NameValuePair> params) {
-    try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+    try (CloseableHttpClient httpClient = buildCloseableHttpClientForGetRequest()) {
       HttpGet get = new HttpGet(new URIBuilder(url).addParameters(params).build());
-      get.addHeader("Accept", "*/* charset=utf-8");
+      get.addHeader("Accept", "*/*");
       get.addHeader("Content-Type", "text/plain; charset=utf-8");
 
       return httpClient.execute(get, new BasicResponseHandler());
@@ -104,5 +104,9 @@ public class HttpInvoker {
       }
     }
     throw new LogCommunicationException("Failed to retrieve data", null);
+  }
+
+  public CloseableHttpClient buildCloseableHttpClientForGetRequest() {
+    return HttpClientBuilder.create().build();
   }
 }

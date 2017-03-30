@@ -77,7 +77,7 @@ public class IndividualFileCTLogOutput implements CTLogOutput {
   }
 
   @Override
-  public boolean addAll(Collection<CertificateData> entries, long startEntryId, long endEntryId) {
+  public boolean addAll(Collection<CertificateData> entries, long startEntryId) {
     return saveBatch(entries);
   }
 
@@ -197,6 +197,11 @@ public class IndividualFileCTLogOutput implements CTLogOutput {
 
   @Override
   public int getSize() {
+    return size.get();
+  }
+
+  @Override
+  public int getDownloadedEntriesSize() {
     return size.get();
   }
 }

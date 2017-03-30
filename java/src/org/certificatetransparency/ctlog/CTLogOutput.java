@@ -16,10 +16,15 @@ public interface CTLogOutput {
   /**
    * Add a collection of entries to the output.
    */
-  boolean addAll(Collection<CertificateData> entries, long startEntryId, long endEntryId);
+  boolean addAll(Collection<CertificateData> entries, long startEntryId);
 
   /**
    * @return the number of entries saved.
    */
   int getSize();
+
+  /**
+   * @return the number of entries downloaded.
+   */
+  int getDownloadedEntriesSize();
 }
