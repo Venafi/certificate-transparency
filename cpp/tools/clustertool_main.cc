@@ -56,7 +56,7 @@ DEFINE_string(cluster_config, "",
 DEFINE_string(etcd_servers, "",
               "Comma separated list of 'hostname:port' of the etcd server(s)");
 DEFINE_string(key, "", "PEM-encoded server private key file");
-
+DEFINE_string(engine, "", "OpenSSL engine to initialize and use");
 
 namespace {
 
@@ -78,7 +78,7 @@ void Usage() {
 
 unique_ptr<LogSigner> BuildLogSigner() {
   CHECK(!FLAGS_key.empty());
-  util::StatusOr<EVP_PKEY*> pkey(ReadPrivateKey(FLAGS_key));
+  const util::StatusOr<EVP_PKEY*> pkey(ReadPrivateKey(FLAGS_key, FLAGS_engine));
   CHECK_EQ(pkey.status(), util::Status::OK);
   return unique_ptr<LogSigner>(new LogSigner(pkey.ValueOrDie()));
 }
@@ -162,7 +162,7 @@ int main(int argc, char* argv[]) {
       election.get(),
       new EtcdConsistentStore(event_base.get(), &internal_pool, &etcd_client,
                               election.get(), "/root", node_id));
-  SQLiteDB db("/tmp/clustertooldb");
+  SQLiteDB db("./clustertooldb");
 
   const string command(argv[1]);
   Status status;

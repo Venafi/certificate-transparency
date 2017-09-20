@@ -9,6 +9,10 @@
 #include "util/libevent_wrapper.h"
 
 using std::string;
+using std::to_string;
+
+DEFINE_int32(cache_control_age_seconds, 0,
+             "Cache-Control header age value in seconds");
 
 namespace cert_trans {
 namespace {
@@ -60,6 +64,12 @@ string LogRequest(evhttp_request* req, int http_status, int resp_body_length) {
   total_http_server_response_codes->Increment(path, http_status);
 
   const string uri(evhttp_request_get_uri(req));
+  if (FLAGS_cache_control_age_seconds > 0 && (http_verb == "GET" || http_verb == "HEAD")) {
+    const string cacheControlValue="max-age=" + to_string(FLAGS_cache_control_age_seconds) + ", public";
+  CHECK_EQ(evhttp_add_header(evhttp_request_get_output_headers(req),
+                             "Cache-Control", cacheControlValue.c_str()),
+           0);
+  }
   return string(peer_addr) + " \"" + http_verb + " " + uri + "\" " +
          std::to_string(http_status) + " " + std::to_string(resp_body_length);
 }

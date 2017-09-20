@@ -59,6 +59,11 @@ public class HttpLogClient {
   private static final String GET_ENTRIES = "get-entries";
   private static final String GET_STH_CONSISTENCY = "get-sth-consistency";
   private static final String GET_ENTRY_AND_PROOF = "get-entry-and-proof";
+  
+  private static final Log LOG = LogFactory.getLog("CTLog");
+
+  private static final int PAGE_SIZE = getIntProperty("ct.log.client.page.size", "1000");
+  private static final int THREAD_POOL_SIZE = getIntProperty("ct.log.client.threads", "20");
 
   private static final Log LOG = LogFactory.getLog("CTLog");
 
@@ -245,7 +250,7 @@ public class HttpLogClient {
    * Entries are passed in batches to the {@link CTLogOutput} callback that is passed as a parameter.
    */
   public void getLogEntries(long start, long end, final CTLogOutput output) throws InterruptedException, ExecutionException {
-    Preconditions.checkArgument(start < end, "Strating index %d should be smaller than the end index %d.", start, end);
+    Preconditions.checkArgument(start <= end, "Strating index %d should be smaller or equal than the end index %d.", start, end);
     Preconditions.checkArgument(start >= 0, "Starting index %d should be greater than 0.", start);
 
     List<Future<Long>> futures = Lists.newArrayList();
@@ -257,7 +262,7 @@ public class HttpLogClient {
         @Override public void run() {
           LOG.info(String.format("Retrieving from %d to %d.", currentStart, currentEnd));
           List<ParsedLogEntry> entries = parseLogEntries(invoker.executeGetRequestWithRetry(logUrl + GET_ENTRIES, createParamsList("start", "end", Long.toString(currentStart), Long.toString(currentEnd))));
-          output.addAll(Lists.transform(entries, entryToCertificateData), currentStart, currentEnd);
+          output.addAll(Lists.transform(entries, entryToCertificateData), currentStart);
         }
       }, 1L));
     }
@@ -293,7 +298,7 @@ public class HttpLogClient {
         e.printStackTrace();
       }
     }
-
+        
     return list.build();
   }
 

@@ -59,6 +59,7 @@ class HttpHandler {
   void GetProof(evhttp_request* req) const;
   void GetSTH(evhttp_request* req) const;
   void GetConsistency(evhttp_request* req) const;
+  void GetSTHTimestamp(evhttp_request* req) const;
 
   void BlockingGetEntries(evhttp_request* req, int64_t start, int64_t end,
                           bool include_scts) const;

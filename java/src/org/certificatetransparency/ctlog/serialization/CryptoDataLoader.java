@@ -96,8 +96,8 @@ public class CryptoDataLoader {
       try {
         kf = KeyFactory.getInstance("RSA");
         PublicKey pk = kf.generatePublic(spec);
-        System.out.println("Public key parsed");
-        return pk;
+	System.out.println("Public key parsed");
+	return pk;
       } catch (InvalidKeySpecException | NoSuchAlgorithmException e1) {
         throw new InvalidInputException("Log public key is invalid. " + e1.getMessage(), e);
       }

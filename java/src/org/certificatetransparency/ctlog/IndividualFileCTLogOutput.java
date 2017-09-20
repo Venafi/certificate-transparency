@@ -77,7 +77,7 @@ public class IndividualFileCTLogOutput implements CTLogOutput {
   }
 
   @Override
-  public boolean addAll(Collection<CertificateData> entries, long startEntryId, long endEntryId) {
+  public boolean addAll(Collection<CertificateData> entries, long startEntryId) {
     return saveBatch(entries);
   }
 
@@ -187,6 +187,7 @@ public class IndividualFileCTLogOutput implements CTLogOutput {
 
       List<X509CertificateObject> chain = CertificateDataSet.getSingletonList(entry.getExtraCertificates());
       caCerts.putIfAbsent(chain, VALUE);
+//      caCerts.computeIfAbsent(chain, v -> VALUE);
     }
 
     size.addAndGet(entries.size());
@@ -196,6 +197,11 @@ public class IndividualFileCTLogOutput implements CTLogOutput {
 
   @Override
   public int getSize() {
+    return size.get();
+  }
+
+  @Override
+  public int getDownloadedEntriesSize() {
     return size.get();
   }
 }

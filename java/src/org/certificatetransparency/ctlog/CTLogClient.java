@@ -84,7 +84,7 @@ public class CTLogClient {
 
     System.exit(0);
   }
-
+  
   private void uploadCertificates(String pemFile, String outputSctFile) throws IOException {
     List<Certificate> certs = CryptoDataLoader.certificatesFromFile(new File(pemFile));
     LOG.info(String.format("Total number of certificates: %d", certs.size()));

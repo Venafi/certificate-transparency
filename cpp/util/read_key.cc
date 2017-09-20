@@ -1,7 +1,15 @@
 #include "util/read_key.h"
 
+#ifndef OPENSSL_IS_BORINGSSL
+#include <openssl/conf.h>
+#include <openssl/engine.h>
+#endif  // OPENSSL_IS_BORINGSSL
 #include <openssl/pem.h>
 #include <memory>
+
+#ifndef OPENSSL_IS_BORINGSSL
+#include "util/openssl_util.h"
+#endif  // OPENSSL_IS_BORINGSSL
 
 using std::unique_ptr;
 
@@ -20,7 +28,19 @@ void FileCloser(FILE* fp) {
 }  // namespace
 
 
-util::StatusOr<EVP_PKEY*> ReadPrivateKey(const std::string& file) {
+#ifndef OPENSSL_IS_BORINGSSL
+static ENGINE* engine(nullptr);
+
+static void EngineFree() {
+  ENGINE_free(engine);
+}
+
+static void EngineFinish() {
+  ENGINE_finish(engine);
+}
+#endif  // OPENSSL_IS_BORINGSSL
+
+util::StatusOr<EVP_PKEY*> ReadPrivateKey(const std::string& file, const std::string& engine_name) {
   unique_ptr<FILE, void (*)(FILE*)> fp(fopen(file.c_str(), "r"), FileCloser);
 
   if (!fp) {
@@ -29,10 +49,37 @@ util::StatusOr<EVP_PKEY*> ReadPrivateKey(const std::string& file) {
 
   // No password.
   EVP_PKEY* retval(nullptr);
-  PEM_read_PrivateKey(fp.get(), &retval, nullptr, nullptr);
-  if (!retval)
-    return util::Status(util::error::FAILED_PRECONDITION,
-                        "invalid key: " + file);
+#ifdef OPENSSL_IS_BORINGSSL
+    PEM_read_PrivateKey(fp.get(), &retval, nullptr, nullptr);
+#else
+  if (engine_name.empty()) {  
+    PEM_read_PrivateKey(fp.get(), &retval, nullptr, nullptr);
+  } else {
+    if (engine == nullptr) {
+      OPENSSL_config(nullptr);
+      ENGINE_load_dynamic();
+      atexit(ENGINE_cleanup);
+
+      engine = ENGINE_by_id(engine_name.c_str());
+      if (!engine) {
+        return util::Status(util::error::NOT_FOUND, "engine not found: " + engine_name);
+      }
+      atexit(EngineFree);
+
+      if (!ENGINE_init(engine)) {
+        return util::Status(util::error::FAILED_PRECONDITION, "engine init failed: " + util::DumpOpenSSLErrorStack());
+      }
+      atexit(EngineFinish);
+
+      LOG(INFO) << engine_name << " initialized successfully.";   
+    }
+
+    retval = ENGINE_load_private_key(engine, file.c_str(), nullptr, nullptr);
+  }
+#endif  // OPENSSL_IS_BORINGSSL
+  if (!retval) {
+    return util::Status(util::error::FAILED_PRECONDITION, "invalid key: " + file);
+  }
 
   return retval;
 }
@@ -55,5 +102,5 @@ util::StatusOr<EVP_PKEY*> ReadPublicKey(const std::string& file) {
   return retval;
 }
 
-
 }  // namespace cert_trans
+

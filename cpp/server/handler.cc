@@ -52,6 +52,18 @@ DEFINE_int32(max_leaf_entries_per_response, 1000,
              "maximum number of entries to put in the response of a "
              "get-entries request");
 
+DEFINE_bool(disable_sth_zero_tree_size, false,
+             "return sth for 0 tree size if value is false, otherwise return error"
+             "get-sth request");
+
+DEFINE_int32(sth_minimum_delay_hours, 23,
+             "return sth if timestamp is not older than now minus provided value in hours, otherwise return error"
+             "get-sth request");
+
+DEFINE_int64(sth_minimum_tree_size, 0,
+             "return sth if tree size is bigger or equal than provided value, otherwise return error"
+             "get-sth request");
+
 namespace {
 
 
@@ -155,6 +167,8 @@ void HttpHandler::Add(libevent::HttpServer* server) {
                          bind(&HttpHandler::GetSTH, this, _1));
   AddProxyWrappedHandler(server, "/ct/v1/get-sth-consistency",
                          bind(&HttpHandler::GetConsistency, this, _1));
+  AddProxyWrappedHandler(server, "/ct/v1/get-sth-timestamp",
+                         bind(&HttpHandler::GetSTHTimestamp, this, _1));
 
   // Now add any sub-class handlers.
   AddHandlers(server);
@@ -254,6 +268,11 @@ void HttpHandler::GetSTH(evhttp_request* req) const {
   const SignedTreeHead& sth(log_lookup_->GetSTH());
 
   VLOG(2) << "SignedTreeHead:\n" << sth.DebugString();
+  if ((sth.tree_size() == 0 && FLAGS_disable_sth_zero_tree_size) ||
+      sth.tree_size() < FLAGS_sth_minimum_tree_size ||
+      sth.timestamp() + FLAGS_sth_minimum_delay_hours*3600000 < util::TimeInMilliseconds())
+    return SendJsonError(event_base_, req, HTTP_BADMETHOD,
+                         "Method not allowed.");
 
   JsonObject json_reply;
   json_reply.Add("tree_size", sth.tree_size());
@@ -266,6 +285,21 @@ void HttpHandler::GetSTH(evhttp_request* req) const {
   SendJsonReply(event_base_, req, HTTP_OK, json_reply);
 }
 
+void HttpHandler::GetSTHTimestamp(evhttp_request* req) const {
+  if (evhttp_request_get_command(req) != EVHTTP_REQ_GET) {
+    return SendJsonError(event_base_, req, HTTP_BADMETHOD,
+                         "Method not allowed.");
+  }
+
+  const SignedTreeHead& sth(log_lookup_->GetSTH());
+
+  JsonObject json_reply;
+  json_reply.Add("timestamp", sth.timestamp());
+
+  VLOG(2) << "GetSTHTimestamp:\n" << json_reply.DebugString();
+
+  SendJsonReply(event_base_, req, HTTP_OK, json_reply);
+}
 
 void HttpHandler::GetConsistency(evhttp_request* req) const {
   if (evhttp_request_get_command(req) != EVHTTP_REQ_GET) {

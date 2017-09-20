@@ -7,6 +7,9 @@
 #include <unistd.h>
 #include <iostream>
 #include <string>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "config.h"
 #include "log/cert_checker.h"
@@ -42,6 +45,10 @@ DEFINE_double(guard_window_seconds, 60,
               "number of seconds will not be sequenced.");
 DEFINE_int32(num_http_server_threads, 16,
              "Number of threads for servicing the incoming HTTP requests.");
+DEFINE_string(engine, "", "OpenSSL engine to initialize and use");
+DEFINE_bool(synchronize_signing, false,
+            "Flag to synchronize signing in order to workaround a "
+            "threading issue when using PKCS11 openssl engine and Safenet HSM library");
 
 namespace libevent = cert_trans::libevent;
 
@@ -92,7 +99,6 @@ static const bool cert_dummy =
 
 }  // namespace
 
-
 int main(int argc, char* argv[]) {
   // Ignore various signals whilst we start up.
   signal(SIGHUP, SIG_IGN);
@@ -104,9 +110,9 @@ int main(int argc, char* argv[]) {
 
   Server::StaticInit();
 
-  util::StatusOr<EVP_PKEY*> pkey(ReadPrivateKey(FLAGS_key));
+  const util::StatusOr<EVP_PKEY*> pkey(ReadPrivateKey(FLAGS_key, FLAGS_engine));
   CHECK_EQ(pkey.status(), util::Status::OK);
-  LogSigner log_signer(pkey.ValueOrDie());
+  LogSigner log_signer(pkey.ValueOrDie(), FLAGS_synchronize_signing);
 
   CertChecker checker;
   CHECK(checker.LoadTrustedCertificates(FLAGS_trusted_cert_file))

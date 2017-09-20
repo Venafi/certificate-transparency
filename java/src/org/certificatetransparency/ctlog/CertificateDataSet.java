@@ -62,9 +62,21 @@ public class CertificateDataSet implements Serializable {
     }
 
     return null;
+//    return certificate != null
+//        ? certMap.computeIfAbsent(certificate, certtificate -> certificate)
+//        : null;
   }
 
   public boolean addAll(Collection<CertificateData> cds) {
+//    boolean added = dataSet.addAll(cds
+//        .stream()
+//        .map(data -> CertificateData.newData(data.getType(),
+//            getSingletonX509Certificate(data.getCertificate()),
+//            getSingletonTBSCertificate(data.getPreCertificate()),
+//            data.getExtensions(),
+//            getSingletonList(data.getExtraCertificates())))
+//        .collect(Collectors.toList()));
+
     boolean added = Iterables.addAll(dataSet, Iterables.transform(cds, new Function<CertificateData, CertificateData>() {
       @Override public CertificateData apply(CertificateData data) {
         return CertificateData.newData(data.getType(), data.getCertificate(),
