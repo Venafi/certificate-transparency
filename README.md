@@ -59,7 +59,7 @@ export CXX=clang++ CC=clang
 mkdir ct  # or whatever directory you prefer
 cd ct
 gclient config --name="certificate-transparency" https://github.com/google/certificate-transparency.git
-gclient sync  # retrieve and build dependencies
+gclient sync --disable-syntax-validation  # retrieve and build dependencies
 # substitute gmake or gnumake below if that's what your platform calls it:
 make -C certificate-transparency check  # build the CT software & self-test
 ```
@@ -68,8 +68,12 @@ Code Layout
 -----------
 
 The source code is generally arranged according to implementation language, in
-the `cpp`, `go`, `java` and `python` subdirectories.  The key subdirectories
-are:
+the `cpp` and `python` subdirectories. ([Java](https://github.com/google/certificate-transparency-java)
+and [Go](https://github.com/google/certificate-transparency-go)
+code are in separate repositories.)
+
+
+The key subdirectories are:
 
  - For the main distributed CT Log itself:
    - `cpp/log`: Main distributed CT Log implementation.
@@ -80,14 +84,7 @@ are:
    - `cpp/fetcher`: Code to fetch entries from another Log
  - Client code for accessing a CT Log instance:
    - `cpp/client`: CT Log client code in C++
-   - `go/client`: CT Log client code in Go
    - `python/ct`: CT Log client code in Python
-   - `java/src/org/certificatetransparency/ctlog`: CT Log client code in Java
- - Other tools:
-   - `go/fixchain`: Tool to fix up certificate chains
-   - `go/gossip`: Code to allow gossip-based synchronization of cert info
-   - `go/scanner`: CT Log scanner tool
-   - `go/merkletree`: Merkle tree implementation in Go.
 
 Building the Code
 -----------------
