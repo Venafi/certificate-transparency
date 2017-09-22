@@ -43,7 +43,7 @@ class Base : public util::Executor {
   Base& operator=(const Base&) = delete;
 
   // Arranges to run the closure on the main loop.
-  void Add(const std::function<void()>& cb) override;
+  void Add(const std::function<void()>& cb, const bool runInDetachedThread = false) override;
 
   void Delay(const std::chrono::duration<double>& delay,
              util::Task* task) override;

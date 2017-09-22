@@ -281,7 +281,8 @@ void UrlFetcher::Fetch(const Request& req, Response* resp, Task* task) {
   // block doing DNS resolution etc.
   // TODO(alcutter): this can go back to being put straight on the event Base
   // once evhtp supports creating SSL connections to a DNS name.
-  impl_->thread_pool_->Add(bind(&State::MakeRequest, state));
+  impl_->thread_pool_->Add(bind(&State::MakeRequest, state),
+  req.url.PathQuery().find("wait=true") != std::string::npos);
 }
 
 
