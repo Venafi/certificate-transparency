@@ -26,15 +26,17 @@ namespace cert_trans {
 
 
 struct UrlFetcher::Impl {
-  Impl(libevent::Base* base, ThreadPool* thread_pool)
+  Impl(libevent::Base* base, ThreadPool* thread_pool, ThreadPool* etcd_wait_request_pool)
       : base_(CHECK_NOTNULL(base)),
         thread_pool_(CHECK_NOTNULL(thread_pool)),
-        pool_(base_) {
+        pool_(base_),
+        etcd_wait_request_pool_(etcd_wait_request_pool) {
   }
 
   libevent::Base* const base_;
   ThreadPool* const thread_pool_;
   internal::ConnectionPool pool_;
+  ThreadPool* etcd_wait_request_pool_;
 };
 
 
@@ -261,8 +263,8 @@ UrlFetcher::UrlFetcher() {
 }
 
 
-UrlFetcher::UrlFetcher(libevent::Base* base, ThreadPool* thread_pool)
-    : impl_(new Impl(CHECK_NOTNULL(base), CHECK_NOTNULL(thread_pool))) {
+UrlFetcher::UrlFetcher(libevent::Base* base, ThreadPool* thread_pool, ThreadPool* etcd_wait_request_pool)
+    : impl_(new Impl(CHECK_NOTNULL(base), CHECK_NOTNULL(thread_pool), CHECK_NOTNULL(etcd_wait_request_pool))) {
 }
 
 
@@ -281,10 +283,11 @@ void UrlFetcher::Fetch(const Request& req, Response* resp, Task* task) {
   // block doing DNS resolution etc.
   // TODO(alcutter): this can go back to being put straight on the event Base
   // once evhtp supports creating SSL connections to a DNS name.
-  impl_->thread_pool_->Add(bind(&State::MakeRequest, state),
-  req.url.PathQuery().find("wait=true") != std::string::npos);
+  if (req.url.PathQuery().find("wait=true") != std::string::npos) 
+    impl_->etcd_wait_request_pool_->Add(bind(&State::MakeRequest, state));
+  else
+    impl_->thread_pool_->Add(bind(&State::MakeRequest, state));
 }
-
 
 ostream& operator<<(ostream& output, const UrlFetcher::Response& resp) {
   output << "status_code: " << resp.status_code << endl << "headers {" << endl;

@@ -118,7 +118,8 @@ int main(int argc, char* argv[]) {
 
   shared_ptr<libevent::Base> event_base(make_shared<libevent::Base>());
   ThreadPool internal_pool(8);
-  UrlFetcher url_fetcher(event_base.get(), &internal_pool);
+  ThreadPool etcd_wait_request_pool(4); 
+  UrlFetcher url_fetcher(event_base.get(), &internal_pool, &etcd_wait_request_pool);
 
   const bool stand_alone_mode(cert_trans::IsStandalone(true));
   LOG(INFO) << "Running in "

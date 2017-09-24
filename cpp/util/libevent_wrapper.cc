@@ -189,7 +189,7 @@ void Base::CheckNotOnEventThread() {
 }
 
 
-void Base::Add(const function<void()>& cb, const bool runInNewThread) {
+void Base::Add(const function<void()>& cb) {
   lock_guard<mutex> lock(closures_lock_);
   closures_.push_back(cb);
   event_active(wake_closures_.get(), 0, 0);

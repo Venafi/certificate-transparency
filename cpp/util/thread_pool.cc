@@ -26,7 +26,7 @@ using std::vector;
 namespace cert_trans {
 namespace {
 
-typedef tuple<steady_clock::time_point, function<void()>, util::Task*, bool>
+typedef tuple<steady_clock::time_point, function<void()>, util::Task*>
     QueueEntry;
 
 
@@ -63,7 +63,7 @@ ThreadPool::Impl::~Impl() {
     lock_guard<mutex> lock(queue_lock_);
     for (int i = threads_.size(); i > 0; --i)
       queue_.emplace(
-          make_tuple(steady_clock::time_point(), function<void()>(), nullptr, false));
+          make_tuple(steady_clock::time_point(), function<void()>(), nullptr));
   }
   // Notify all the threads *after* adding all the empty closures, to
   // avoid any races.
@@ -129,12 +129,7 @@ void ThreadPool::Impl::Worker() {
     }
 
     // Make sure not to hold the lock while calling the closure.
-    if (get<3>(entry)) {
-      std::thread t(get<1>(entry));
-      t.detach();
-    } else {
-      get<1>(entry)();
-    }
+    get<1>(entry)();
   }
 }
 
@@ -160,7 +155,7 @@ ThreadPool::~ThreadPool() {
 }
 
 
-void ThreadPool::Add(const function<void()>& closure, const bool runInDetachedThread) {
+void ThreadPool::Add(const function<void()>& closure) {
   // Empty closures signal a thread to exit, don't allow that (also,
   // it doesn't make sense).
   if (!closure) {
@@ -169,7 +164,7 @@ void ThreadPool::Add(const function<void()>& closure, const bool runInDetachedTh
 
   {
     lock_guard<mutex> lock(impl_->queue_lock_);
-    impl_->queue_.emplace(make_tuple(steady_clock::now(), closure, nullptr, runInDetachedThread));
+    impl_->queue_.emplace(make_tuple(steady_clock::now(), closure, nullptr));
   }
   impl_->queue_cond_var_.notify_one();
 }
@@ -181,7 +176,7 @@ void ThreadPool::Delay(const duration<double>& delay, util::Task* task) {
     lock_guard<mutex> lock(impl_->queue_lock_);
     impl_->queue_.emplace(make_tuple(
         steady_clock::now() + duration_cast<std::chrono::microseconds>(delay),
-        [task]() { task->Return(); }, task, false));
+        [task]() { task->Return(); }, task));
   }
   impl_->queue_cond_var_.notify_one();
 }

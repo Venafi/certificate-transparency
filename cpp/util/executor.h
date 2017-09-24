@@ -14,7 +14,7 @@ class Executor {
   Executor& operator=(const Executor&) = delete;
   virtual ~Executor() = default;
 
-  virtual void Add(const std::function<void()>& closure, const bool runInDetachedThread = false) = 0;
+  virtual void Add(const std::function<void()>& closure) = 0;
   virtual void Delay(const std::chrono::duration<double>& delay,
                      Task* task) = 0;
 
