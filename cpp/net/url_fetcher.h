@@ -53,7 +53,8 @@ class UrlFetcher {
     std::string body;
   };
 
-  UrlFetcher(libevent::Base* base, ThreadPool* thread_pool);
+  UrlFetcher(libevent::Base* base, ThreadPool* thread_pool,
+      ThreadPool* etcd_wait_request_pool_ = nullptr);
   virtual ~UrlFetcher();
   UrlFetcher(const UrlFetcher&) = delete;
   UrlFetcher& operator=(const UrlFetcher&) = delete;

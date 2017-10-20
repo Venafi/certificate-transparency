@@ -65,6 +65,12 @@ bool ExtractChain(libevent::Base* base, evhttp_request* req,
       return false;
     }
 
+    if (i == 0 && cert->isExpired()) {
+      SendJsonError(base, req, HTTP_BADREQUEST,
+                    "Expired certificate can not be added.");
+      return false;
+    }
+
     chain->AddCert(move(cert));
   }
 

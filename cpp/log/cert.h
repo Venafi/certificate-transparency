@@ -47,6 +47,7 @@ class Cert {
   std::string PrintSignatureAlgorithm() const;
 
   bool IsIdenticalTo(const Cert& other) const;
+  bool isExpired() const;
 
   // Returns TRUE if the extension is present.
   // Returns FALSE if the extension is not present.

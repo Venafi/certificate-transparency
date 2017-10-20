@@ -49,6 +49,10 @@ DEFINE_string(engine, "", "OpenSSL engine to initialize and use");
 DEFINE_bool(synchronize_signing, false,
             "Flag to synchronize signing in order to workaround a "
             "threading issue when using PKCS11 openssl engine and Safenet HSM library");
+DEFINE_int32(etcd_wait_request_threads, 4,
+             "Number of threads for serving wait requests to etcd servers.");
+DEFINE_int32(num_internal_pool_threads, 32,
+             "Number of threads for internal thread pool.");
 
 namespace libevent = cert_trans::libevent;
 
@@ -129,8 +133,9 @@ int main(int argc, char* argv[]) {
    // internal pool are processing add-chain request, as during processing
    // additional thread from internal pool is needed for each request for adding
    // pending entry to etcd server.
-  ThreadPool internal_pool(FLAGS_num_http_server_threads * 2);
-  UrlFetcher url_fetcher(event_base.get(), &internal_pool);
+  ThreadPool internal_pool(FLAGS_num_internal_pool_threads);
+  ThreadPool etcd_wait_request_pool(FLAGS_etcd_wait_request_threads);
+  UrlFetcher url_fetcher(event_base.get(), &internal_pool, &etcd_wait_request_pool);
 
   const bool stand_alone_mode(cert_trans::IsStandalone(true));
   LOG(INFO) << "Running in "

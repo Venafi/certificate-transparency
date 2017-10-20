@@ -335,6 +335,11 @@ bool Cert::IsIdenticalTo(const Cert& other) const {
 }
 
 
+bool Cert::isExpired() const {
+  return X509_cmp_current_time(X509_get_notAfter(CHECK_NOTNULL(x509_.get()))) == -1;
+}
+
+
 util::StatusOr<bool> Cert::HasExtension(int extension_nid) const {
   CHECK(x509_);
 
