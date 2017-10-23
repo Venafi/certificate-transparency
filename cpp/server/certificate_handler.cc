@@ -21,6 +21,8 @@ using std::string;
 using std::unique_ptr;
 using util::Status;
 
+DEFINE_bool(reject_expired_certificate_upload, true,
+            "Do not allow upload of expired certificates.");
 
 namespace {
 
@@ -65,7 +67,7 @@ bool ExtractChain(libevent::Base* base, evhttp_request* req,
       return false;
     }
 
-    if (i == 0 && cert->isExpired()) {
+    if (FLAGS_reject_expired_certificate_upload && i == 0 && cert->isExpired()) {
       SendJsonError(base, req, HTTP_BADREQUEST,
                     "Expired certificate can not be added.");
       return false;
