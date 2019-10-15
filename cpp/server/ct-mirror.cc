@@ -67,6 +67,10 @@ DEFINE_string(
     "PEM-encoded server public key file of the log we're mirroring.");
 DEFINE_int32(local_sth_update_frequency_seconds, 30,
              "Number of seconds between local checks for updated tree data.");
+DEFINE_int32(num_internal_pool_threads, 32,
+             "Number of threads for internal thread pool.");
+DEFINE_int32(etcd_wait_request_threads, 4,
+             "Number of threads for serving wait requests to etcd servers.");
 
 namespace libevent = cert_trans::libevent;
 
@@ -287,8 +291,9 @@ int main(int argc, char* argv[]) {
 
   const bool stand_alone_mode(cert_trans::IsStandalone(false));
   const shared_ptr<libevent::Base> event_base(make_shared<libevent::Base>());
-  ThreadPool internal_pool(8);
-  UrlFetcher url_fetcher(event_base.get(), &internal_pool);
+  ThreadPool internal_pool(FLAGS_num_internal_pool_threads);  
+  ThreadPool etcd_wait_request_pool(FLAGS_etcd_wait_request_threads);  
+  UrlFetcher url_fetcher(event_base.get(), &internal_pool, &etcd_wait_request_pool);
 
   const unique_ptr<EtcdClient> etcd_client(
       cert_trans::ProvideEtcdClient(event_base.get(), &internal_pool,

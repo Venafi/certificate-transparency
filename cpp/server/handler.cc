@@ -155,6 +155,8 @@ void HttpHandler::Add(libevent::HttpServer* server) {
                          bind(&HttpHandler::GetSTH, this, _1));
   AddProxyWrappedHandler(server, "/ct/v1/get-sth-consistency",
                          bind(&HttpHandler::GetConsistency, this, _1));
+  AddProxyWrappedHandler(server, "/ct/v1/get-sth-timestamp",
+                         bind(&HttpHandler::GetSTHTimestamp, this, _1));
 
   // Now add any sub-class handlers.
   AddHandlers(server);
@@ -266,6 +268,21 @@ void HttpHandler::GetSTH(evhttp_request* req) const {
   SendJsonReply(event_base_, req, HTTP_OK, json_reply);
 }
 
+void HttpHandler::GetSTHTimestamp(evhttp_request* req) const {
+  if (evhttp_request_get_command(req) != EVHTTP_REQ_GET) {
+    return SendJsonError(event_base_, req, HTTP_BADMETHOD,
+                         "Method not allowed.");
+  }
+
+  const SignedTreeHead& sth(log_lookup_->GetSTH());
+
+  JsonObject json_reply;
+  json_reply.Add("timestamp", sth.timestamp());
+
+  VLOG(2) << "GetSTHTimestamp:\n" << json_reply.DebugString();
+
+  SendJsonReply(event_base_, req, HTTP_OK, json_reply);
+}
 
 void HttpHandler::GetConsistency(evhttp_request* req) const {
   if (evhttp_request_get_command(req) != EVHTTP_REQ_GET) {
